@@ -1,0 +1,7 @@
+# Live break data (buyer names) written by the server
+breakboard/state.json
+
+# Personal OBS scene collection export (device IDs, local paths)
+Grendoth*.json
+
+__pycache__/

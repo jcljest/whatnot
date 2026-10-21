@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Break Control</title>
+<!-- OBS custom browser dock. Every change is posted to the server and pushed to the overlay. -->
+<style>
+  :root { --yellow: #FFE000; --bg: #1e1f22; --panel: #2b2d31; --line: #3a3c42; --text: #e8e8e8; --dim: #9a9ca3; --bad: #ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 10px; background: var(--bg); color: var(--text); font: 13px 'Segoe UI', Arial, sans-serif; }
+  h2 { margin: 4px 0 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+  button { flex: 1; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; cursor: pointer; font: inherit; }
+  button:hover { border-color: var(--dim); }
+  button.on { background: var(--yellow); color: #111; border-color: var(--yellow); font-weight: 700; }
+  input { background: #111214; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; font: inherit; min-width: 0; }
+  .slot { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .slot .buyer { flex: 1; }
+  .slot .digit { width: 34px; text-align: center; font-weight: 800; font-size: 15px; }
+  .digit.dup { border-color: var(--bad); color: var(--bad); }
+  .dot { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+  .row { display: flex; gap: 6px; margin-top: 10px; }
+  #warn { margin-top: 8px; min-height: 16px; color: var(--bad); }
+  #conn { float: right; font-size: 11px; color: var(--bad); }
+  #conn.ok { color: #5fd38d; }
+</style>
+<script src="/common.js"></script>
+</head>
+<body>
+<span id="conn">offline</span>
+<h2>Hybrid break</h2>
+<div id="slots"></div>
+<div id="warn"></div>
+<div class="row">
+  <button id="clear">New break</button>
+  <button id="toggle"></button>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let st = null, postTimer = null;
+
+function save(now = true) {
+  clearTimeout(postTimer);
+  const send = () => fetch('/state', { method: 'POST', body: JSON.stringify(st) });
+  now ? send() : (postTimer = setTimeout(send, 250));  // typing is debounced
+}
+
+// Digits 0-9 should each belong to exactly one slot; flag repeats while typing.
+function checkDigits() {
+  const seen = {};
+  st.slots.forEach(s => s.digits.forEach(d => d !== '' && (seen[d] = (seen[d] || 0) + 1)));
+  document.querySelectorAll('.digit').forEach(el => el.classList.toggle('dup', seen[el.value] > 1));
+  const dups = Object.keys(seen).filter(d => seen[d] > 1);
+  $('warn').textContent = dups.length ? `Digit ${dups.join(', ')} assigned twice` : '';
+}
+
+function render() {
+  $('slots').innerHTML = st.slots.map((s, i) => {
+    const c = BB.COLORS[s.color];
+    return `<div class="slot"><div class="dot" style="background:${c.dot};color:${c.ink};${c.ring ? `border:2px solid ${c.ring}` : ''}" title="${c.name}">${s.color}</div>
+      <input class="buyer" data-i="${i}" value="${esc(s.buyer)}" placeholder="${c.name} buyer">
+      ${s.digits.map((d, j) => `<input class="digit" data-i="${i}" data-j="${j}" value="${d}" maxlength="1" inputmode="numeric">`).join('')}</div>`;
+  }).join('');
+  $('toggle').textContent = st.visible ? 'Hide overlay' : 'Show overlay';
+  $('toggle').className = st.visible ? '' : 'on';
+  checkDigits();
+}
+
+$('slots').oninput = e => {
+  const el = e.target, s = st.slots[el.dataset.i];
+  if (el.classList.contains('digit')) {
+    el.value = el.value.replace(/\D/g, '');
+    s.digits[el.dataset.j] = el.value;
+    checkDigits();
+    // Jump to the next digit box so all ten can be typed in one go.
+    const boxes = [...document.querySelectorAll('.digit')];
+    if (el.value) boxes[boxes.indexOf(el) + 1]?.focus();
+  } else {
+    s.buyer = el.value;
+  }
+  save(false);
+};
+$('slots').onfocusin = e => e.target.classList.contains('digit') && e.target.select();
+$('clear').onclick = () => {
+  if (!confirm('Start a new break? Clears all names and digits.')) return;
+  st = { ...BB.newState(), visible: st.visible };
+  render(); save();
+};
+$('toggle').onclick = () => { st.visible = !st.visible; render(); save(); };
+
+// Load once; the dock is the only writer, so it doesn't need to follow the event stream after that.
+const es = new EventSource('/events');
+es.onopen = () => { $('conn').textContent = 'live'; $('conn').className = 'ok'; };
+es.onerror = () => { $('conn').textContent = 'offline'; $('conn').className = ''; };
+es.onmessage = e => {
+  if (st) return;
+  const saved = JSON.parse(e.data);
+  st = BB.valid(saved) ? saved : BB.newState();
+  render();
+  save();
+};
+</script>
+</body>
+</html>

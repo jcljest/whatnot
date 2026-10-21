@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Color break tile: RED. 118x176. Buyer name is an OBS text source in the empty slot (y 128-162). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="118" height="176" viewBox="0 0 118 176" font-family="'SF Pro Display','Segoe UI',Arial,sans-serif">
+  <defs><clipPath id="shape"><rect width="118" height="176" rx="14"/></clipPath></defs>
+  <rect width="118" height="176" rx="14" fill="#161616" fill-opacity="0.94"/>
+  <rect width="118" height="6" fill="#D7262E" clip-path="url(#shape)"/>
+  <circle cx="59" cy="50" r="34" fill="#D7262E"/>
+  <text x="59" y="63" font-size="36" font-weight="800" fill="#FFFFFF" text-anchor="middle">R</text>
+  <text x="59" y="116" font-size="20" font-weight="800" fill="#FFFFFF" text-anchor="middle">RED</text>
+  <rect x="19" y="164" width="80" height="2" rx="1" fill="#3A3A3A"/>
+</svg>

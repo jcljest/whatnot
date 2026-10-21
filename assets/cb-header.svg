@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Color break header. 300x64. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="64" viewBox="0 0 300 64" font-family="'SF Pro Display','Segoe UI',Arial,sans-serif">
+  <defs><clipPath id="shape"><rect width="300" height="64" rx="16"/></clipPath></defs>
+  <rect width="300" height="64" rx="16" fill="#161616" fill-opacity="0.94"/>
+  <rect width="300" height="6" fill="#FFE000" clip-path="url(#shape)"/>
+  <text x="150" y="47" font-size="34" font-weight="800" fill="#FFE000" text-anchor="middle" letter-spacing="2">COLOR BREAK</text>
+</svg>

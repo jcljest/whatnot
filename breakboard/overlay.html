@@ -1,0 +1,54 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Break Overlay</title>
+<!-- OBS browser source, 1080 x 400, transparent. Shows each buyer's color and digits for a hybrid break. -->
+<style>
+  :root { --yellow: #FFE000; --panel: rgba(22,22,22,.94); --slot: #3A3A3A; --ink: #0F0F0F; }
+  html, body { margin: 0; background: transparent; font-family: 'SF Pro Display','Segoe UI',Arial,sans-serif; color: #fff; }
+  #board { width: 1040px; margin: 20px auto; }
+  #board.hidden { display: none; }
+  .hdr { display: inline-block; background: var(--panel); border-top: 8px solid var(--yellow); border-radius: 22px;
+         padding: 10px 36px 14px; font-size: 52px; font-weight: 800; letter-spacing: 3px; color: var(--yellow); }
+  .slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 16px; }
+  .card { position: relative; background: var(--panel); border-radius: 20px; overflow: hidden; padding: 26px 10px 16px; text-align: center; }
+  .card .strip { position: absolute; inset: 0 0 auto 0; height: 8px; }
+  .syms { display: flex; justify-content: center; align-items: center; gap: 6px; height: 80px; }
+  .dot { flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; font-weight: 800; box-sizing: border-box; }
+  .chip { min-width: 40px; height: 64px; border-radius: 12px; background: var(--yellow); color: var(--ink);
+          display: grid; place-items: center; font-size: 44px; font-weight: 800; padding: 0 4px; }
+  .chip.empty { background: var(--slot); color: #777; }
+  .label { margin-top: 10px; font-size: 22px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .buyer { margin-top: 10px; height: 34px; line-height: 34px; font-size: 24px; font-weight: 700; color: var(--yellow);
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 2px solid var(--slot); }
+  .buyer:empty::before { content: 'OPEN'; color: #777; }
+</style>
+<script src="/common.js"></script>
+</head>
+<body>
+<div id="board"><div class="hdr">HYBRID BREAK</div><div class="slots" id="slots"></div></div>
+<script>
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function render(st) {
+  if (!BB.valid(st)) return;
+  document.getElementById('board').className = st.visible ? '' : 'hidden';
+  document.getElementById('slots').innerHTML = st.slots.map(s => {
+    const c = BB.COLORS[s.color];
+    const chips = s.digits.map(d => d === '' ? '<div class="chip empty">–</div>' : `<div class="chip">${esc(d)}</div>`).join('');
+    return `<div class="card"><div class="strip" style="background:${c.ring || c.dot}"></div>
+      <div class="syms"><div class="dot" style="background:${c.dot};color:${c.ink};${c.ring ? `border:4px solid ${c.ring}` : ''}">${s.color}</div>${chips}</div>
+      <div class="label">${c.name}</div><div class="buyer">${esc(s.buyer)}</div></div>`;
+  }).join('');
+}
+
+// Laid out at 1080 wide; shrink or grow to whatever width the OBS source is set to.
+const fit = () => (document.body.style.zoom = innerWidth / 1080);
+addEventListener('resize', fit);
+fit();
+
+new EventSource('/events').onmessage = e => render(JSON.parse(e.data));
+</script>
+</body>
+</html>
